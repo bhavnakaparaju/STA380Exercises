@@ -1,0 +1,852 @@
+---
+title: "STA 380 Exercises"
+author: "Callie Gilmore, Bhavna Kaparaju, Shruti Kolhatkar, Dawson Cook"
+date: "8/16/2020"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Question 1: Visual Story Telling: Green Buildings
+## Analysis of the Experts Decisions
+```{r 1.1, echo=FALSE}
+library(mosaic)
+library(tidyverse)
+library(ggplot2)
+green = read.csv('greenbuildings.csv')
+green_only = subset(green, green_rating==1)
+non_green = subset(green, green_rating==0)
+attach(green)
+```
+
+### Removing Bottom 10% of Leasing Rates
+Below is the histogram displaying the distribution of leasing rate for the non-green buildings.
+```{r 1.2, echo=FALSE}
+hist(non_green$leasing_rate, 
+     col=c('red', rep('grey',9)),
+     main = "Leasing Rate for Non-Green Buildings", 
+     xlab = "Leasing Rate")
+```
+Below is the histogram displaying the distribution of leasing rate for the green buildings.
+```{r 1.3, echo=FALSE}
+hist(green_only$leasing_rate, 
+     col=c('red', rep('grey',9)),
+     main = "Leasing Rate for Green Buildings", 
+     xlab = "Leasing Rate")
+```
+
+Based on the distributions shown above, we do not believe that we should remove the buildings with leasing rates that are less than 10%. While the non green building distribution shows a slight left skew with some outliers, the green building distribution does not. By removing these values, we believe we would be compromising the data set by not including all information available. 
+
+### Using Median instead of Mean
+Since we did not remove the outliers above, we believe it is important to use median intead of the mean because the median is more robust to outliers. We agree with the experts decision to do this.
+
+Below is the median value for the green buildings rent:
+```{r 1.4, echo=FALSE}
+median(green_only$Rent)
+```
+
+Below is the median value for the non-green buildings rent:
+```{r 1.5, echo=FALSE}
+median(non_green$Rent)
+```
+Based on the results above, on average rent is more expensive in green buildings over non_green buildings. This leads us to believe that there may be a advantage to building more green buildings but we will rely further analysis to confirm. 
+
+## Potential Other Causes of Rent Increases
+The guru stated that since our building will be 250,000 square feet and that there is an increase of 2.60 dollars for green buildings, that our estimated revenue would be 650,000 dollars more. However, we are unsure about this conclusion. We believe that other specifications about the building could impact overall revenue. 
+
+### Age Vs Rent
+Below, we display the relationship between age and rent. From this, we can see that majority of the green buildings are newer, which makes sense as this is a new development in construction. However, this graph does not give us a clear picture if the age largely impacts the overall rent.
+```{r 1.6, echo=FALSE}
+ggplot(data = green) + geom_point(mapping = aes(x = age, y = Rent, color = green_rating))
+```
+
+### Leasing Rate vs Rent
+Below, the graph displays the relationship between leasing rate and rent. It appears to have a slightly positive correlation. This makes sense as more desirable will lease to capacity more often. 
+
+```{r 1.7, echo=FALSE}
+ggplot(data = green) + geom_point(mapping = aes(x = leasing_rate, y = Rent, color = green_rating))
+```
+
+### Rent vs Class
+Based on the below boxplot, we have concluded that class could be indicative of rent increases. So class is potentially a variable that would affect rent and affect our conclusion of revenue increase.
+```{r 1.8, echo=FALSE}
+green$class = ifelse(green$class_a==1, 1, ifelse(green$class_b==1, 2, 3))
+boxplot(green$Rent~green$class,
+        outline=FALSE,
+        boxwex=0.5, 
+        col=c('red','blue','green'), 
+        names = c("Class A", "Class B", "Class C"), 
+        main="Rent vs. Class",
+        xlab = "Class Rating", ylab="Annual Rent  ($/ sqft)")
+```
+
+### Rent vs Renovated
+The below graph shows that the mean values for renovated vs non-renovated buildings are very similar. While, the renovated buildings have a higher maximum rent value, it does not appear that all renovated buildings cost more in rent. We believe that this is due to the fact that new buildings do not require renovations so while an older building that is renovated will cost more than an older building that is not renovated, a newer builder that is not technically renovated will still cost more than the older renovated building. Due to this, we do not believe that the renovated variable is highly indicative of price. 
+
+```{r 1.9, echo=FALSE}
+boxplot(green$Rent~green$renovated,
+        outline=FALSE,
+        boxwex=0.5, 
+        col=c('red','blue'), 
+        names = c("Renovated", "Non-Renovated"), 
+        main="Rent vs. Renovated",
+        xlab = "Renovated", ylab="Annual Rent  ($/ sqft)")
+```
+
+### Rent vs Amenities
+Surprisingly enough, it also does not appear that buildings containing amentities have higher rents. Due to this, we do not think that the amenities variable is highly indicative of increased rent.
+
+```{r 1.10, echo=FALSE}
+boxplot(green$Rent~green$amenities,
+        outline=FALSE,
+        boxwex=0.5, 
+        col=c('red','blue'), 
+        names = c("Amenities", "No Amenities"), 
+        main="Rent vs. Amenities",
+        xlab = "Amenities", ylab="Annual Rent  ($/ sqft)")
+```
+
+
+## Conclusion and Recommendation 
+Based on our analysis from the above figures, it does appear that the main variable that increases the cost of rent is whether or not the building is a green building. It also appears that green buildings rent at a higher leasing rate than non-green buildings.
+
+
+# Question 2: Visual Story Telling: Flights at ABIA
+Our goal for this assignment is to find some interesting story about flights arriving and departing from Austin airport. To begin this process, we started by simply looking at the dataset and we decided that looking at the various Delay variables would be interesting. We decided to focus on these variables because Delays have a very adverse affect on flying and almost everyone has had a negative experience with airline delays. We wanted to understand how the Austin airport is related with Delays.
+
+```{r 2.1, echo=FALSE}
+rm(list=ls())
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+abia = read.csv('ABIA.csv')
+```
+
+## Visual Analaysis
+
+### Departure Delays vs Arrival Delays
+To start, we ran a simple scatter plot of Departure Delays and Arrival Delays. There seems to be a positive correlation between Departure Delay and Arrival Delay, which makes sense as often times when a plane leaves late, it will arrive at the location late as well.
+
+```{r 2.2, echo=FALSE}
+ggplot(data = abia) + geom_point(mapping = aes(x = DepDelay, y = ArrDelay))
+```
+
+### Departure Delays vs Month
+Next, we wanted to understand if there was any relationship between delays and time of year so we looked at a histogram of delays by month. We decided to specifically look at Departure Delays because that is most indicative of factors at the Austin airport. It appears as though the low time for delays is September through November. We discussed how this could be related to the Fall season since there is less harsh weather in the fall. The spike in December could be related to high travel related to the Christmas holiday. 
+
+```{r 2.3, echo=FALSE}
+abia$arrive_d=ifelse(abia$ArrDelay>0,abia$ArrDelay, NA)
+abia$arrive_a=ifelse(abia$ArrDelay<=0,-abia$ArrDelay,NA)
+abia$depart_d=ifelse(abia$DepDelay>0,abia$DepDelay,NA)
+abia$depart_a=ifelse(abia$DepDelay<=0,-abia$DepDelay,NA)
+ggplot(abia, aes(x=Month, y=depart_d)) + 
+  geom_bar(stat='identity') + scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10,11,12))
+```
+
+### Departure Delays vs Day of Week
+We looked at a similar histogram as the one above but for day of week with 1 being Sunday and 7 and being Saturday. The only interesting thing to note about this graph is that there seems to be a very low level on Fridays.
+
+```{r 2.4, echo=FALSE}
+ggplot(abia, aes(x=DayOfWeek, y=depart_d)) + 
+  geom_bar(stat='identity') + scale_x_continuous(breaks=c(1,2,3,4,5,6,7))
+```
+
+### Monthly Arrival and Departure Delays
+Next we looked at the average monthly delays both arrival and departure. They seem to track with eachother for the most part, which makes sense from our earlier scatter plot that shows there is a positive relationship between arrival and departure delays. However, they slightly deviate from eachother in the summer months with departure delays being less than arrival delays.
+
+```{r 2.5, echo=FALSE}
+ggplot(abia,aes(x = Month ,na.rm = TRUE, colour = DelayType)) +
+  geom_line(aes(y=arrive_d,color='Arrival'),stat = "summary", fun.y = "mean",na.rm = TRUE)+
+  geom_line(aes(y=depart_d,color='Departure'),stat = "summary", fun.y = "mean",na.rm = TRUE)+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10,11,12))+
+  ylab('Delay Time (min)')+
+  ggtitle('Arrival and Departure Delays')+
+  theme_minimal()
+```
+
+### Daily Arrival and Departure Delays
+Similar to the graph above, we looked at daily arrival and departure delays. They follow the same the trend; however, the departure delays are always less than the arrival delays. This is interesting because departure delays are usually more indicative of the local airport so this displays that the Austin airport sends flights out late less often than flights arrive to them late. 
+
+```{r 2.6, echo=FALSE}
+ggplot(abia,aes(x = DayOfWeek ,na.rm = TRUE, colour = DelayType)) +
+  geom_line(aes(y=arrive_d,color='Arrival'),stat = "summary", fun.y = "mean",na.rm = TRUE)+
+  geom_line(aes(y=depart_d,color='Departure'),stat = "summary", fun.y = "mean",na.rm = TRUE)+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7))+
+  ylab('Delay Time (min)')+
+  ggtitle('Daily Arrival and Departure Delays')+
+  theme_minimal()
+```
+
+### Types of Delays
+Next, we looked at the types of delays over the different months. This is interesting because the consistently highest type of delay is Late Aircraft Delay. This makes sense because we saw above that the Austin airport has a much higher rate of Arrival Delays than Departure Delays.
+
+
+```{r 2.7, echo=FALSE}
+ggplot(abia, aes(x=Month, na.rm = TRUE, colour = Type)) + 
+  geom_line(aes(y = LateAircraftDelay, colour="Late Aircraft Delay"), stat = "summary", fun.y = "mean", na.rm = TRUE) + 
+  geom_line(aes(y = SecurityDelay, colour = "Security Delay"), stat = "summary", fun.y = "mean", na.rm = TRUE) +
+  geom_line(aes(y = NASDelay, colour = "NAS Delay"), stat = "summary", fun.y = "mean", na.rm = TRUE) +
+  geom_line(aes(y = WeatherDelay, colour = "Weather Delay"), stat = "summary", fun.y = "mean", na.rm = TRUE) +
+  geom_line(aes(y = CarrierDelay, colour = "Carrier Delay"), stat = "summary", fun.y = "mean", na.rm = TRUE) +
+  ylab(label="Delay Time (min)") + 
+  xlab("Month")+
+  theme_minimal() +
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10,11,12)) +
+  ggtitle('Monthly Frequency of Types of Delay')
+```
+
+### Delays by Carrier
+Lastly, we looked at delays by carrier as shown below. 
+
+```{r 2.9, echo=FALSE}
+ggplot(abia, aes(x=UniqueCarrier, y=depart_d, na.rm = TRUE))+
+  stat_summary(fun.y="mean", geom="bar",fill='pink', na.rm = TRUE)+
+  stat_summary(aes(label=round(..y..,2)), fun.y="mean", geom="text", size=3,vjust = -0.5,na.rm = TRUE)+
+  theme_minimal()+
+  ggtitle('Delays  Carrier')+
+  xlab('Unique Carrier byCode')+
+  ylab('Departure Delay (min)')+
+  coord_cartesian(ylim=c(0,45))
+```
+
+
+## Summary and Conclusion
+From our visual analysis, we concluded that the Austin airport does a better job than average when it comes to delays. We conclude this because Austin airport has consistently less departure delay times even when their arrival delay times are high. This is surprising because arrival and departure delays were highly correlated. 
+
+# Question 3: Portfolio Modeling
+## Selecting and Loading our Stocks
+
+The ETF's we decided to build our portfolio with were iShares Preferred and Income Securities ETF(PFF), Invesco Preferred ETF(PGX), SPDR Barclays Capital Convertible Bond ETF(CWB). We then adjusted for splits and dividends, and plotted each indivuial ETF. 
+```{r 3.1, echo=FALSE}
+rm(list=ls())
+library(mosaic)
+library(quantmod)
+library(foreach)
+mystocks = c("PFF", "PGX", "CWB")
+myprices = getSymbols(mystocks, from = "2015-01-01")
+#getSymbols(myprices)
+PFFa = adjustOHLC(PFF)
+PGXa = adjustOHLC(PGX)
+CWBa = adjustOHLC(CWB)
+plot(ClCl(PFFa))
+plot(ClCl(PGXa))
+plot(ClCl(CWBa))
+```
+
+Combine close to close changes in a single matrix, and remove first row because value is NA. We didn't have a "before" in our data. Outputting all returns afterwards. 
+```{r 3.2, echo=FALSE}
+all_returns = cbind(ClCl(PFFa),ClCl(PGXa),ClCl(CWBa))
+all_returns = as.matrix(na.omit(all_returns))
+N = nrow(all_returns)
+head(all_returns)
+```
+
+Plotting the correlation of all three ETF's. Shows a strong correlation up to around index 120
+```{r 3.3, echo=FALSE}
+pairs(all_returns)
+plot(all_returns[,1], type='l')
+```
+
+Plotting the market returns over time
+```{r 3.4, echo=FALSE}
+plot(all_returns[,3], type='l')
+```
+
+Plotting all_returns correlation between two days, and seems to be similar in trend
+```{r 3.5, echo=FALSE}
+plot(all_returns[1:(N-1),3], all_returns[2:N,3])
+```
+
+
+```{r 3.6, echo=FALSE}
+acf(all_returns[,3])
+```
+
+## First Possibility: Aggressive Model
+We chose the following 3 stocks: PFF, PGX, CWB. From the ETFDB website, we determined that the PFF stock has a YTD of 0.02%, the PGX stock as a YTD of 1.86% and the CWB stock has  YTD of 20.99%. Based on these values, we decided to begin with an aggressive strategy by weighting the CWB stock higher than our other stocks.
+
+```{r 3.7, echo=FALSE}
+return.today = resample(all_returns, 1, orig.ids=FALSE)
+total_wealth = 100000
+my_weights = c(0.10, 0.15, 0.75)
+holdings = total_wealth*my_weights
+holdings = holdings*(1 + return.today)
+holdings
+```
+
+```{r 3.8, echo=FALSE}
+total_wealth = sum(holdings)
+total_wealth
+```
+
+We decided to run the simulation over a 4 week period. We then plotted the path our total wealth took in our portfolio over 20 days. Also using bootstrap resampling to estimate the 4-week 
+```{r 3.9, echo=FALSE}
+total_wealth = 100000
+weights = c(0.10, 0.15, 0.75)
+holdings = weights * total_wealth
+n_days = 20
+wealthtracker = rep(0, n_days) 
+for(today in 1:n_days) {
+	return.today = resample(all_returns, 1, orig.ids=FALSE)
+	holdings = holdings + holdings*return.today
+	total_wealth = sum(holdings)
+	wealthtracker[today] = total_wealth
+}
+total_wealth
+plot(wealthtracker, type='l')
+```
+
+We then decided to simulate many different possible futures.
+```{r 3.10, echo=FALSE}
+initial_wealth = 100000
+sim1 = foreach(i=1:5000, .combine='rbind') %do% {
+	total_wealth = initial_wealth
+	weights = c(0.5, 0.25, 0.25)
+	holdings = weights * total_wealth
+	n_days = 20
+	wealthtracker = rep(0, n_days)
+	for(today in 1:n_days) {
+		return.today = resample(all_returns, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		total_wealth = sum(holdings)
+		wealthtracker[today] = total_wealth
+	}
+	wealthtracker
+}
+head(sim1)
+```
+
+```{r 3.11, echo=FALSE}
+hist(sim1[,n_days], 25)
+```
+
+Next, we decided to look at the profit and loss.
+```{r 3.12, echo=FALSE}
+mean(sim1[,n_days])
+mean(sim1[,n_days] - initial_wealth)
+hist(sim1[,n_days]- initial_wealth, breaks=30)
+```
+
+5% value at risk displayed below:
+```{r 3.13, echo=FALSE}
+quantile(sim1[,n_days]- initial_wealth, prob=0.05)
+```
+
+## Second Possibility: Cautious Stategy
+For our cautious strategy, we decided to weight the less volatile stocks higher, such as PFF and PGX. CWB was the most sporadic ETF, so we decided to give it the least amount of weight. 
+```{r 3.14, echo=FALSE}
+return.today = resample(all_returns, 1, orig.ids=FALSE)
+total_wealth = 100000
+my_weights = c(0.50, 0.30, 0.20)
+holdings = total_wealth*my_weights
+holdings = holdings*(1 + return.today)
+holdings
+```
+
+Summing our total wealth for our portfolio 
+```{r 3.15, echo=FALSE}
+total_wealth = sum(holdings)
+total_wealth
+```
+
+We decided to run the simulation over a 4 week period. We then plotted the path our total wealth took in our portfolio over 20 days. Also using bootstrap resampling to estimate the 4-week 
+```{r 3.16, echo=FALSE}
+total_wealth = 100000
+weights = c(0.50, 0.30, 0.20)
+holdings = weights * total_wealth
+n_days = 20
+wealthtracker = rep(0, n_days) 
+for(today in 1:n_days) {
+	return.today = resample(all_returns, 1, orig.ids=FALSE)
+	holdings = holdings + holdings*return.today
+	total_wealth = sum(holdings)
+	wealthtracker[today] = total_wealth
+}
+total_wealth
+plot(wealthtracker, type='l')
+```
+
+We then decided to simulate 5000 different possible futures. Then displayed the first 10 dollar amounts of our total wealth 
+```{r 3.17, echo=FALSE}
+initial_wealth = 100000
+sim1 = foreach(i=1:5000, .combine='rbind') %do% {
+	total_wealth = initial_wealth
+	weights = c(0.5, 0.25, 0.25)
+	holdings = weights * total_wealth
+	n_days = 20
+	wealthtracker = rep(0, n_days)
+	for(today in 1:n_days) {
+		return.today = resample(all_returns, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		total_wealth = sum(holdings)
+		wealthtracker[today] = total_wealth
+	}
+	wealthtracker
+}
+head(sim1)
+```
+
+We then used a histogram to plot 25 Total wealth in our portfolio 
+```{r 3.18, echo=FALSE}
+hist(sim1[,n_days], 25)
+```
+
+Next, we decided to look at the profit and loss.
+```{r 3.19, echo=FALSE}
+mean(sim1[,n_days])
+mean(sim1[,n_days] - initial_wealth)
+hist(sim1[,n_days]- initial_wealth, breaks=30)
+```
+
+5% value at risk displayed below:
+```{r 3.20, echo=FALSE}
+quantile(sim1[,n_days]- initial_wealth, prob=0.05)
+```
+
+## Third Possibility: Even Split Strategy
+For our last strategy, we did an even split for the weights of all 3 of our stocks. Please note that, our CWB stock is weighted 1% since we had 3 stocks, however, this is still considered a mostly even split. 
+```{r 3.21, echo=FALSE}
+return.today = resample(all_returns, 1, orig.ids=FALSE)
+total_wealth = 100000
+my_weights = c(0.33, 0.33, 0.34)
+holdings = total_wealth*my_weights
+holdings = holdings*(1 + return.today)
+holdings
+```
+
+Our total wealth is
+```{r 3.22, echo=FALSE}
+total_wealth = sum(holdings)
+total_wealth
+```
+
+We decided to run the simulation over a 4 week period. We then plotted the path our total wealth took in our portfolio over 20 days. Also using bootstrap resampling to estimate the 4-week 
+```{r 3.23, echo=FALSE}
+total_wealth = 100000
+weights = c(0.33, 0.33, 0.34)
+holdings = weights * total_wealth
+n_days = 20
+wealthtracker = rep(0, n_days) 
+for(today in 1:n_days) {
+	return.today = resample(all_returns, 1, orig.ids=FALSE)
+	holdings = holdings + holdings*return.today
+	total_wealth = sum(holdings)
+	wealthtracker[today] = total_wealth
+}
+total_wealth
+plot(wealthtracker, type='l')
+```
+
+We then decided to simulate 5000 different possible futures. Then displayed the first 10 dollar amounts of our total wealth 
+```{r 3.24, echo=FALSE}
+initial_wealth = 100000
+sim1 = foreach(i=1:5000, .combine='rbind') %do% {
+	total_wealth = initial_wealth
+	weights = c(0.5, 0.25, 0.25)
+	holdings = weights * total_wealth
+	n_days = 20
+	wealthtracker = rep(0, n_days)
+	for(today in 1:n_days) {
+		return.today = resample(all_returns, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		total_wealth = sum(holdings)
+		wealthtracker[today] = total_wealth
+	}
+	wealthtracker
+}
+head(sim1)
+```
+
+We then used a histogram to plot 25 Total wealth in our portfolio 
+```{r 3.25, echo=FALSE}
+hist(sim1[,n_days], 25)
+```
+
+Next, we decided to look at the profit and loss.
+```{r 3.26, echo=FALSE}
+mean(sim1[,n_days])
+mean(sim1[,n_days] - initial_wealth)
+hist(sim1[,n_days]- initial_wealth, breaks=30)
+```
+
+5% value at risk displayed below:
+```{r 3.27, echo=FALSE}
+quantile(sim1[,n_days]- initial_wealth, prob=0.05)
+```
+
+## Summary and Report
+All three of our portfolios profited over 200 dollars. According to our different portfolios, our aggressive strategy had a 5% value at risk of -2663.451. Our cautious strategy had a 5% value at risk of -2833.097, and lastly our evenly weighted strategy had a -2943.378 5% value at risk. When investing more money into ETF's with a higher YTD, a higher profit is attained. This is because the company has been growing rapidly instead of steadily. So in this situation, investing in slowly growing companies will yield less profit.
+
+
+# Question 4: Market Segmentation
+To start, we first removed chatter, uncategorized and spam from the dataset as we did not thing these variables were clear or helpful. 
+```{r 4.1, echo=FALSE}
+rm(list=ls())
+social = read.csv('social_marketing.csv')
+attach(social)
+discard = c('spam','uncategorized','chatter', 'adult')
+social = social[,!names(social)%in%discard]
+```
+
+We created an elbow plot to determine the optimal number of clusters in our k means clustering.
+```{r 4.2, echo=FALSE}
+library(ggplot2)
+library(LICORS) 
+library(foreach)
+library(mosaic)
+X = social[,(2:33)]
+X = scale(X, center=TRUE, scale=TRUE)
+mu = attr(X,"scaled:center")
+sigma = attr(X,"scaled:scale")
+set.seed(12345)
+k.max = 15
+data = X
+wss = sapply(1:k.max,
+             function(k){kmeans(data,k,nstart=50,iter.max = 15)$tot.withinss})
+wss
+plot(1:k.max, wss, type='b', pch=19, frame=FALSE, xlab='number of clusters', ylab='total within clusters sum of squares')
+```
+After looking at the plot, we determined that 4 would be the ideal number of clusters because there is a slight elbow between the 4 and 6 number of clusters. 
+
+Below we are plotting our cluster distribution
+
+```{r 4.3, echo=FALSE}
+library(ggplot2)
+library(reshape2)
+library(foreach)
+library(cluster)
+library(ggpubr)
+library(fpc)
+clust1 = kmeans(X, 4, nstart=25)
+social_clust <- cbind(social, clust1$cluster)
+plotcluster(social_clust[,2:33], clust1$cluster)
+```
+
+Next, we initialize our k means and get the statistical summary for each cluster. 
+```{r 4.4, echo=FALSE}
+social_clust1_main <- as.data.frame(cbind(clust1$center[1,]*sigma + mu, 
+                            clust1$center[2,]*sigma + mu,
+                            clust1$center[3,]*sigma + mu,
+                            clust1$center[4,]*sigma + mu))
+summary(social_clust1_main)
+names(social_clust1_main) <- c('Cluster_1',
+                'Cluster_2',
+                'Cluster_3',
+                'Cluster_4')
+```
+
+Next, we are going to plot the frequency of tweets in each category within each cluster. 
+
+Plotting category of tweets in Cluter 1: 
+```{r 4.5, echo=FALSE}
+social_clust1_main$type <- row.names(social_clust1_main)
+#Cluster 1
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_1) , y=Cluster_1)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 1",
+        x ="Category", y = "Cluster centre values")
+```
+In cluster one, followers of NutrientH20 tweet mostly about health_nutrition, cooking, photo_sharing, personal_fitness, and fashion. 
+
+Plotting category of tweets in Cluter 2: 
+```{r 4.6, echo=FALSE}
+#cluster 2 
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_2) , y=Cluster_2)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 2",
+        x ="Category", y = "Cluster centre values")
+```
+In cluster two, followers of NutrientH20 tweet mostly about politics, travel, and news. 
+
+
+Plotting category of tweets for Cluster 3: 
+```{r 4.7, echo=FALSE}
+#Cluster 3
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_3) , y=Cluster_3)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 3",
+        x ="Category", y = "Cluster centre values")
+```
+In cluster three, followers of NutrientH20 tweet mostly about sports_fandom, religion, food, parenting, school, photo_sharing and family. 
+
+Plotting category of tweets for Cluster 4: 
+```{r 4.8, echo=FALSE}
+#Cluster 4
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_4) , y=Cluster_4)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 4",
+        x ="Category", y = "Cluster centre values")
+```
+In cluster four, followers of NutrientH20 tweet mostly about photo_sharing, current_events, college_uni, health_nutrition, shopping, travel and online_gaming. 
+
+From our clusters, we can see that the followers of NutrientH20 tweet about a variety of categories. Among all four cluters, a significant amount of users compose tweets that fall under the category photo_sharing, health_nutrition, and food. This tells us that these are  the interests that followers of NutritionH20 have in common. However, there are a wide variety of categories of tweets in each cluster so there seems to be no significant categories that stand out.  
+
+# Question 5: Author Attribution  
+
+
+## Pre-processing  
+To begin this problem, we first had to process the data so that we could interpret it. We began by reading in the data using a readerPlain function. We then created the test and train datasets. For the following steps, we performed them for both the train and test data sets. We started by cleaning the file names and then creating a text mining corpus. Then, we converted alphabets to lower cases, removing numbers, punctuation, excess space and stop words.
+
+```{r 5.1, echo = FALSE,warning=FALSE,include=FALSE}
+library(tm) 
+library(magrittr)
+library(slam)
+library(proxy)
+library(caret)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library('e1071')
+```
+
+  
+
+```{r 5.2, echo = FALSE,warning=FALSE,include=FALSE}
+ readerPlain = function(fname){
+				readPlain(elem=list(content=readLines(fname)), 
+							id=fname, language='en') }
+```
+
+```{r 5.3, echo =FALSE}							
+train=Sys.glob('C:/Users/bhavn/Documents/Predictive Modeling/STA380-Master/STA380-Master/data/ReutersC50/C50train/*')
+```
+
+```{r 5.4, echo =FALSE}
+comb_art=NULL
+labels=NULL
+for (name in train)
+{ 
+  author=substring(name,first=50)#first= ; ensure less than string length
+  article=Sys.glob(paste0(name,'/*.txt'))
+  comb_art=append(comb_art,article)
+  labels=append(labels,rep(author,length(article)))
+}
+```
+
+```{r 5.5, echo =FALSE}
+readerPlain <- function(fname)
+  {
+				readPlain(elem=list(content=readLines(fname)), 
+							id=fname, language='en') 
+  }
+comb = lapply(comb_art, readerPlain) 
+names(comb) = comb_art
+names(comb) = sub('.txt', '', names(comb))
+``` 
+
+```{r 5.6, echo =FALSE}
+corp_tr=Corpus(VectorSource(comb))
+```
+
+```{r 5.7, echo = FALSE,warning=FALSE}
+
+corp_tr_cp=corp_tr 
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(tolower))
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(removeNumbers)) 
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(removePunctuation)) 
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(stripWhitespace)) 
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(removeWords),stopwords("en")) 
+DTM_train = DocumentTermMatrix(corp_tr_cp)
+DTM_train 
+DTM_tr=removeSparseTerms(DTM_train,.99)
+tf_idf_mat = weightTfIdf(DTM_tr)
+DTM_trr<-as.matrix(tf_idf_mat) 
+tf_idf_mat 
+```
+
+
+```{r 5.8, echo=FALSE}
+test=Sys.glob('C:/Users/bhavn/Documents/Predictive Modeling/STA380-Master/STA380-Master/data/ReutersC50/C50train/*')
+```
+
+```{r 5.9, echo=FALSE}
+comb_art1=NULL
+labels1=NULL
+for (name in test)
+{ 
+  author1=substring(name,first=50)#first= ; ensure less than string length
+  article1=Sys.glob(paste0(name,'/*.txt'))
+  comb_art1=append(comb_art1,article1)
+  labels1=append(labels1,rep(author1,length(article1)))
+}
+``` 
+
+```{r 5.10, echo=FALSE}
+comb1 = lapply(comb_art1, readerPlain) 
+names(comb1) = comb_art1
+names(comb1) = sub('.txt', '', names(comb1))
+```
+
+```{r 5.11, echo=FALSE}
+corp_ts=Corpus(VectorSource(comb1))
+```
+
+ 
+
+```{r 5.11a, echo = FALSE,warning=FALSE,include=FALSE}
+corp_ts_cp=corp_ts 
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(tolower)) 
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(removeNumbers)) 
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(removePunctuation)) 
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(stripWhitespace)) 
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(removeWords),stopwords("en")) 
+```
+
+
+```{r 5.12, echo = FALSE,warning=FALSE}
+DTM_ts=DocumentTermMatrix(corp_ts_cp,list(dictionary=colnames(DTM_tr)))
+tf_idf_mat_ts = weightTfIdf(DTM_ts)
+DTM_tss<-as.matrix(tf_idf_mat_ts) 
+tf_idf_mat_ts 
+```
+
+```{r 5.13, echo=FALSE}
+DTM_trr_1<-DTM_trr[,which(colSums(DTM_trr) != 0)] 
+DTM_tss_1<-DTM_tss[,which(colSums(DTM_tss) != 0)]
+```
+
+ 
+
+```{r 5.14, echo=FALSE}
+
+DTM_tss_1 = DTM_tss_1[,intersect(colnames(DTM_tss_1),colnames(DTM_trr_1))]
+DTM_trr_1 = DTM_trr_1[,intersect(colnames(DTM_tss_1),colnames(DTM_trr_1))]
+```
+
+## PCA 
+Next, we decided to run a PCA in order to determine the interesting features. We started by eliminating 0 entry columns and used only the intersecting columns. Since we are wanting to run a classification model, it is important that we prepare the data for a classification problem. We accomplish this by running the PCA. Now the dataset hopefully contains the important information for classification in order to predict the author.
+```{r 5.15, echo=FALSE}
+mod_pca = prcomp(DTM_trr_1,scale=TRUE)
+pred_pca=predict(mod_pca,newdata = DTM_tss_1)
+```
+
+
+```{r 5.16, echo=FALSE}
+
+plot(mod_pca,type='line') 
+var <- apply(mod_pca$x, 2, var)  
+prop <- var / sum(var)
+plot(cumsum(mod_pca$sdev^2/sum(mod_pca$sdev^2)))
+```
+
+ 
+
+```{r 5.17, echo=FALSE}
+tr_class = data.frame(mod_pca$x[,1:724])
+tr_class['author']=labels
+tr_load = mod_pca$rotation[,1:724]
+ts_class_pre <- scale(DTM_tss_1) %*% tr_load
+ts_class <- as.data.frame(ts_class_pre)
+ts_class['author']=labels1
+```
+
+
+## KNN Model 
+
+Next, we decided to run our model. We decided to run a KNN model. Our KNN model information is displayed below. 
+
+```{r 5.18, echo=FALSE}
+train.X = subset(tr_class, select = -c(author))
+test.X = subset(ts_class,select=-c(author))
+train.author=as.factor(tr_class$author)
+test.author=as.factor(ts_class$author)
+```
+
+```{r 5.19, echo=FALSE}
+library(class)
+set.seed(12345)
+knn_pred=knn(train.X,test.X,train.author,k=1)
+```
+
+```{r 5.20, echo=FALSE}
+temp_knn=as.data.frame(cbind(knn_pred,test.author))
+temp_knn_flag<-ifelse(as.integer(knn_pred)==as.integer(test.author),1,0)
+sum(temp_knn_flag)
+sum(temp_knn_flag)*100/nrow(temp_knn) 
+```
+## Conclusion: 
+
+In conclusion, we created a a KNN model to predict the author of different texts. The majority of this problem included the pre-processing in order to get the data in a usable format for classification modeling.
+
+
+
+
+# Question 6: Association Rule Mining
+In this problem, we are analyzing a text file that contains cart information of a grocery store, aka what different users are buying. Below, you can see a few different items present in several carts. 
+```{r 6.1, echo=FALSE}
+rm(list=ls())
+library(tidyverse)
+library(arules) 
+library(arulesViz)
+groceries_raw = scan("groceries.txt", what = "", sep = "\n")
+head(groceries_raw)
+```
+
+```{r 6.2, echo=FALSE}
+str(groceries_raw)
+```
+In order to analyze this data, we decided to turn the data into a transaction class. From the summary below, you can see that there are 9,835 rows, meaning there are that many transactions or carts. Also from the summary, you can see that whole milk is the most common item in a transaction or cart and that the average number of items in the cart is around 4. 
+
+```{r 6.3, echo=FALSE}
+groceries = strsplit(groceries_raw, ",")
+groctrans = as(groceries, "transactions")
+summary(groctrans)
+```
+
+## Visualization of Most Popular Items
+In the histogram below, you can see the frequencies of the most popular 10 items. Whole milk is number 1 as the summary above showed. 
+```{r 6.4, echo=FALSE}
+itemFrequencyPlot(groctrans, topN = 10, col="pink")
+```
+
+## Apiori Algorithm
+
+### First Attempt
+We started by using the following values: support = 0.07, confidence = .08 and length = 2.
+From this, we only got two rules with whole milk and other vegetables. These are the two most common items in each cart as you can see from the histogram above.
+
+```{r 6.5, echo=FALSE}
+grocrules_1 = apriori(groctrans, 
+                      parameter=list(support=0.07, confidence=.08, minlen=2))
+arules::inspect(grocrules_1)
+```
+
+```{r 6.6, echo=FALSE}
+plot(grocrules_1, method='graph')
+```
+
+### Second Attempt
+Next, we decreased support to 0.05, increased confidence to 0.3 but left length the same. This gave us 3 rules and a relationship between rolls/buns, yogurt, other vegetables that all go through whole milk. All of these items are still in the top 10 of most frequently bought items.
+```{r 6.7, echo=FALSE}
+grocrules_2 = apriori(groctrans, 
+                      parameter=list(support=0.05, confidence=.3, minlen=2))
+arules::inspect(grocrules_2)
+plot(head(grocrules_2,15,by='lift'), method='graph')
+```
+
+```{r 6.8, echo=FALSE}
+plot(head(grocrules_2,15,by='lift'), method='graph')
+```
+
+
+### Third Attempt
+Finally, we decreased support to 0.0018, increased confidence to 0.9 and still left length the same. This gave us 4 rules but gave us a much better picture. From the graph, we can see an association between purchasing bottled beer, red/blush wine and liquor. We can also see an association between purchasing other vegetables, fruit/vegetable juice, tropical fruit and whipped/sour cream. From there, it branches out even further to show us other items and how they could be associated. 
+
+```{r 6.9, echo=FALSE}
+grocrules_3 = apriori(groctrans, 
+                      parameter=list(support=0.0018, confidence=0.9, minlen=2))
+arules::inspect(grocrules_3)
+```
+
+```{r 6.10, echo=FALSE}
+plot(head(grocrules_3, 5, by='lift'), method='graph')
+```
